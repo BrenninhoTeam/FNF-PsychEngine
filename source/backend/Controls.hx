@@ -100,7 +100,9 @@ class Controls
 		if(result) controllerMode = false;
 		
 		if(!result) result = checkGamepad(key, true);
+		#if mobile
 		if(!result) result = checkMobile(key, true);
+		#end
 		
 		return result;
 	}
@@ -111,7 +113,9 @@ class Controls
 		if(result) controllerMode = false;
 		
 		if(!result) result = checkGamepad(key, false);
+		#if mobile
 		if(!result) result = checkMobile(key, false);
+		#end
 		
 		return result;
 	}
@@ -122,14 +126,16 @@ class Controls
 		if(result) controllerMode = false;
 		
 		if(!result) result = checkGamepad(key, false, true);
+		#if mobile
 		if(!result) result = checkMobile(key, false, true);
+		#end
 		
 		return result;
 	}
 	
 	private function checkKeyboard(key:String, justPressed:Bool, justReleased:Bool = false):Bool
 	{
-		if(keyboardBinds.exists(key))
+		if(keyboardBinds.exists(key) && keyboardBinds[key] != null)
 		{
 			if(justReleased)
 				return FlxG.keys.anyJustReleased(keyboardBinds[key]);
@@ -143,15 +149,44 @@ class Controls
 	
 	private function checkGamepad(key:String, justPressed:Bool, justReleased:Bool = false):Bool
 	{
-		if(gamepadBinds.exists(key))
+		if(gamepadBinds.exists(key) && gamepadBinds[key] != null && gamepadBinds[key].length > 0)
 		{
 			var result:Bool = false;
+			var binds:Array<FlxGamepadInputID> = gamepadBinds[key];
+			
 			if(justReleased)
-				result = FlxG.gamepads.anyJustReleased(gamepadBinds[key]);
+			{
+				for(button in binds)
+				{
+					if(FlxG.gamepads.anyJustReleased(button))
+					{
+						result = true;
+						break;
+					}
+				}
+			}
 			else if(justPressed)
-				result = FlxG.gamepads.anyJustPressed(gamepadBinds[key]);
+			{
+				for(button in binds)
+				{
+					if(FlxG.gamepads.anyJustPressed(button))
+					{
+						result = true;
+						break;
+					}
+				}
+			}
 			else
-				result = FlxG.gamepads.anyPressed(gamepadBinds[key]);
+			{
+				for(button in binds)
+				{
+					if(FlxG.gamepads.anyPressed(button))
+					{
+						result = true;
+						break;
+					}
+				}
+			}
 				
 			if(result) controllerMode = true;
 			return result;
@@ -162,7 +197,7 @@ class Controls
 	#if mobile
 	private function checkMobile(key:String, justPressed:Bool, justReleased:Bool = false):Bool
 	{
-		if(mobileBinds != null && mobileBinds.exists(key))
+		if(mobileBinds != null && mobileBinds.exists(key) && mobileBinds[key] != null)
 		{
 			for(button in mobileBinds[key])
 			{
@@ -194,9 +229,12 @@ class Controls
 		{
 			for(key in mobileBinds.keys())
 			{
-				for(button in mobileBinds[key])
+				if(mobileBinds[key] != null)
 				{
-					if(button != null) button.update();
+					for(button in mobileBinds[key])
+					{
+						if(button != null) button.update();
+					}
 				}
 			}
 		}
@@ -210,9 +248,12 @@ class Controls
 		{
 			for(key in mobileBinds.keys())
 			{
-				for(button in mobileBinds[key])
+				if(mobileBinds[key] != null)
 				{
-					if(button != null) button.reset();
+					for(button in mobileBinds[key])
+					{
+						if(button != null) button.reset();
+					}
 				}
 			}
 		}
@@ -222,19 +263,19 @@ class Controls
 	public function getInputName(key:String, ?forGamepad:Bool = false, ?forMobile:Bool = false):String
 	{
 		#if mobile
-		if(forMobile && mobileBinds.exists(key) && mobileBinds[key].length > 0)
+		if(forMobile && mobileBinds.exists(key) && mobileBinds[key] != null && mobileBinds[key].length > 0)
 		{
 			var button:MobileButton = mobileBinds[key][0];
 			if(button != null) return button.name;
 		}
 		#end
 		
-		if(forGamepad && gamepadBinds.exists(key) && gamepadBinds[key].length > 0)
+		if(forGamepad && gamepadBinds.exists(key) && gamepadBinds[key] != null && gamepadBinds[key].length > 0)
 		{
 			var inputId:FlxGamepadInputID = gamepadBinds[key][0];
-			return FlxGamepadMapping.getButtonName(inputId);
+			return getGamepadButtonName(inputId);
 		}
-		else if(keyboardBinds.exists(key) && keyboardBinds[key].length > 0)
+		else if(keyboardBinds.exists(key) && keyboardBinds[key] != null && keyboardBinds[key].length > 0)
 		{
 			var keyCode:FlxKey = keyboardBinds[key][0];
 			return FlxKey.toStringMap.get(keyCode);
@@ -242,13 +283,45 @@ class Controls
 		return "?";
 	}
 	
-	public function isGamepad()
+	private function getGamepadButtonName(buttonId:FlxGamepadInputID):String
+	{
+		switch(buttonId)
+		{
+			case A: return "A";
+			case B: return "B";
+			case X: return "X";
+			case Y: return "Y";
+			case BACK: return "Back";
+			case START: return "Start";
+			case LEFT_SHOULDER: return "LB";
+			case RIGHT_SHOULDER: return "RB";
+			case LEFT_TRIGGER: return "LT";
+			case RIGHT_TRIGGER: return "RT";
+			case DPAD_UP: return "D-Pad Up";
+			case DPAD_DOWN: return "D-Pad Down";
+			case DPAD_LEFT: return "D-Pad Left";
+			case DPAD_RIGHT: return "D-Pad Right";
+			case LEFT_STICK_DIGITAL: return "LS";
+			case RIGHT_STICK_DIGITAL: return "RS";
+			case LEFT_STICK_UP: return "L Stick Up";
+			case LEFT_STICK_DOWN: return "L Stick Down";
+			case LEFT_STICK_LEFT: return "L Stick Left";
+			case LEFT_STICK_RIGHT: return "L Stick Right";
+			case RIGHT_STICK_UP: return "R Stick Up";
+			case RIGHT_STICK_DOWN: return "R Stick Down";
+			case RIGHT_STICK_LEFT: return "R Stick Left";
+			case RIGHT_STICK_RIGHT: return "R Stick Right";
+			default: return "Button";
+		}
+	}
+	
+	public function isGamepad():Bool
 	{
 		return controllerMode;
 	}
 	
 	#if mobile
-	public function isMobile()
+	public function isMobile():Bool
 	{
 		return mobileMode;
 	}
@@ -278,7 +351,7 @@ class Controls
 		controllerMode = other.controllerMode;
 		
 		#if mobile
-		mobileBinds = other.mobileBinds.copy();
+		if(other.mobileBinds != null) mobileBinds = other.mobileBinds.copy();
 		mobileMode = other.mobileMode;
 		#end
 	}
@@ -290,7 +363,7 @@ class Controls
 		gamepadBinds = ClientPrefs.gamepadBinds;
 		
 		#if mobile
-		mobileBinds = ClientPrefs.mobileBinds;
+		if(ClientPrefs.mobileBinds != null) mobileBinds = ClientPrefs.mobileBinds;
 		#end
 	}
 }
